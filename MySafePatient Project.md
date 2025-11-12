@@ -1,4 +1,4 @@
-# PsyNote -- Privacy-First Workspace Project
+# MySafePatient -- Privacy-First Workspace Project
 
 ## 1. Vision
 
