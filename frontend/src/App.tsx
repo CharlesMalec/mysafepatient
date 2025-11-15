@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import RichTextEditor from "./components/RichTextEditor";
 import { api } from "./api/client";
 import type { Patient, Appointment, Note } from "./types";
 
@@ -65,6 +66,14 @@ function App() {
   const [newPatientLastName, setNewPatientLastName] = useState("");
   const [newPatientEmail, setNewPatientEmail] = useState("");
 
+  // States pour création de note
+  const [newNotePatientId, setNewNotePatientId] = useState("");
+  const [newNoteTitle, setNewNoteTitle] = useState("");
+  const [newNoteContent, setNewNoteContent] = useState("");
+
+  
+
+
   useEffect(() => {
     const load = async () => {
       setError(null);
@@ -120,6 +129,27 @@ function App() {
       setError(err?.message || "Unable to create patient");
     }
   };
+
+  const handleCreateNote = async () => {
+    if (!newNotePatientId || !newNoteContent.trim()) return;
+
+    try {
+      setError(null);
+      const created = await api.createNoteForPatient(newNotePatientId, {
+        title: newNoteTitle || null,
+        content: newNoteContent,
+      });
+
+      setNotes((prev) => [created, ...prev]);
+
+      setNewNotePatientId("");
+      setNewNoteTitle("");
+      setNewNoteContent("");
+    } catch (err: any) {
+      setError(err?.message || "Unable to create note");
+    }
+  };
+
 
   const patientById = useMemo(() => {
     const map = new Map<string, Patient>();
@@ -258,9 +288,8 @@ function App() {
                                 </span>
                                 <span className="agenda-main">
                                   {patient
-                                    ? `${patient.lastName.toUpperCase()} ${
-                                        patient.firstName
-                                      }`
+                                    ? `${patient.lastName.toUpperCase()} ${patient.firstName
+                                    }`
                                     : "Unknown patient"}
                                 </span>
                                 <span className="agenda-status">
@@ -291,6 +320,51 @@ function App() {
               <span className="badge">{notes.length}</span>
             </header>
 
+            {/* --- Create new note --- */}
+            <div className="card" style={{ padding: "1rem", marginBottom: "2rem" }}>
+              <h3 style={{ marginBottom: "1rem" }}>New note</h3>
+
+              <select
+                value={newNotePatientId}
+                onChange={(e) => setNewNotePatientId(e.target.value)}
+                className="select"
+              >
+                <option value="">Select patient…</option>
+                {patients.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.lastName.toUpperCase()} {p.firstName}
+                  </option>
+                ))}
+              </select>
+
+              <input
+                type="text"
+                placeholder="Note title (optional)"
+                value={newNoteTitle}
+                onChange={(e) => setNewNoteTitle(e.target.value)}
+                className="input"
+                style={{ marginTop: "1rem" }}
+              />
+
+              <div style={{ marginTop: "1rem" }}>
+                <RichTextEditor
+                  value={newNoteContent}
+                  onChange={setNewNoteContent}
+                  placeholder="Write your note..."
+                />
+              </div>
+
+              <button
+                className="button"
+                disabled={!newNotePatientId || !newNoteContent.trim()}
+                onClick={handleCreateNote}
+                style={{ marginTop: "1rem" }}
+              >
+                Save note
+              </button>
+            </div>
+
+            {/* --- Existing notes --- */}
             {loading ? (
               <p>Loading notes…</p>
             ) : notes.length === 0 ? (
@@ -304,20 +378,25 @@ function App() {
                       <div className="note-header">
                         {patient && (
                           <span className="note-patient">
-                            {patient.lastName.toUpperCase()}{" "}
-                            {patient.firstName}
+                            {patient.lastName.toUpperCase()} {patient.firstName}
                           </span>
                         )}
                         <span className="note-date">
                           {formatDateTime(n.createdAt)}
                         </span>
                       </div>
+
                       {n.title && (
                         <div className="note-title">
                           <strong>{n.title}</strong>
                         </div>
                       )}
-                      <p className="note-content">{n.content}</p>
+
+                      {/* HTML rendu depuis Quill */}
+                      <div
+                        className="note-content"
+                        dangerouslySetInnerHTML={{ __html: n.content }}
+                      />
                     </li>
                   );
                 })}
@@ -325,6 +404,8 @@ function App() {
             )}
           </section>
         )}
+
+
       </main>
     </div>
   );

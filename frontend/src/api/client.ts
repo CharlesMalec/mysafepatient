@@ -1,7 +1,6 @@
-// src/api/client.ts
+// frontend/src/api/client.ts
 import type { Patient, Appointment, Note } from "../types";
 
-// ⚠️ Mets bien l'URL de ta fonction Scaleway ici (sans / final)
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ??
   "https://mysafepatientns2zvutvls-mysafepatient-fs.functions.fnc.fr-par.scw.cloud";
@@ -61,5 +60,15 @@ export const api = {
   // --- NOTES ---
   getNotesByPatient(patientId: string): Promise<Note[]> {
     return apiFetch<Note[]>(`/patients/${patientId}/notes`);
+  },
+
+  createNoteForPatient(
+    patientId: string,
+    payload: { title?: string | null; content: string }
+  ): Promise<Note> {
+    return apiFetch<Note>(`/patients/${patientId}/notes`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
   },
 };

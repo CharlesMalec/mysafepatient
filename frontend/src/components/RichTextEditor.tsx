@@ -3,17 +3,13 @@ import React from "react";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 
-interface RichTextEditorProps {
+interface Props {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
 }
 
-const RichTextEditor: React.FC<RichTextEditorProps> = ({
-  value,
-  onChange,
-  placeholder,
-}) => {
+export default function RichTextEditor({ value, onChange, placeholder }: Props) {
   const modules = {
     toolbar: [
       [{ header: [1, 2, 3, false] }],
@@ -38,17 +34,13 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   ];
 
   return (
-    <div className="border rounded-md overflow-hidden">
-      <ReactQuill
-        theme="snow"
-        value={value}
-        onChange={onChange}
-        modules={modules}
-        formats={formats}
-        placeholder={placeholder}
-      />
-    </div>
+    <ReactQuill
+      theme="snow"
+      value={value}
+      onChange={onChange}
+      modules={modules}
+      formats={formats}
+      placeholder={placeholder}
+    />
   );
-};
-
-export default RichTextEditor;
+}
