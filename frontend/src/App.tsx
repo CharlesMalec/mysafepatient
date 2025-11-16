@@ -1,117 +1,152 @@
 import { useEffect, useMemo, useState } from "react";
-import RichTextEditor from "./components/RichTextEditor";
 import { api } from "./api/client";
 import type { Patient, Appointment, Note } from "./types";
-
-type Tab = "patients" | "appointments" | "notes";
-
-function formatDateTime(iso: string | null | undefined) {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString();
-}
-
-function formatDateLabel(isoDate: string) {
-  const d = new Date(isoDate);
-  if (Number.isNaN(d.getTime())) return isoDate;
-  return d.toLocaleDateString(undefined, {
-    weekday: "long",
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
-
-function formatTime(iso: string) {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleTimeString(undefined, {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-// Group appointments by YYYY-MM-DD
-function groupAppointmentsByDay(appointments: Appointment[]) {
-  const map = new Map<string, Appointment[]>();
-
-  for (const a of appointments) {
-    const d = new Date(a.startTime);
-    if (Number.isNaN(d.getTime())) {
-      const key = "Invalid date";
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(a);
-      continue;
-    }
-    const key = d.toISOString().slice(0, 10); // YYYY-MM-DD
-    if (!map.has(key)) map.set(key, []);
-    map.get(key)!.push(a);
-  }
-
-  return Array.from(map.entries()).sort(([d1], [d2]) => d1.localeCompare(d2));
-}
+import SidebarMenu, { type Mode } from "./components/SideBarMenu";
+import PatientDetail from "./components/PatientDetail";
+import PatientNotes from "./components/PatientNotes";
+import { groupAppointmentsByDay } from "./utils/groupAppointments";
+import { formatDateLabel, formatTime } from "./utils/dateUtils";
 
 function App() {
-  const [tab, setTab] = useState<Tab>("patients");
+  const [mode, setMode] = useState<Mode>("planning");
 
   const [patients, setPatients] = useState<Patient[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [notes, setNotes] = useState<Note[]>([]);
+  const [patientNotes, setPatientNotes] = useState<Note[]>([]);
 
-  const [loading, setLoading] = useState(false);
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(
+    null
+  );
+  const [isCreatingNewPatient, setIsCreatingNewPatient] = useState(false);
+
+  const [loadingMain, setLoadingMain] = useState(false);
+  const [loadingNotes, setLoadingNotes] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Formulaire de nouveau patient
   const [newPatientFirstName, setNewPatientFirstName] = useState("");
   const [newPatientLastName, setNewPatientLastName] = useState("");
   const [newPatientEmail, setNewPatientEmail] = useState("");
+  const [newPatientPhone, setNewPatientPhone] = useState("");
 
-  // States pour création de note
-  const [newNotePatientId, setNewNotePatientId] = useState("");
-  const [newNoteTitle, setNewNoteTitle] = useState("");
-  const [newNoteContent, setNewNoteContent] = useState("");
+  const patientById = useMemo(() => {
+    const map = new Map<string, Patient>();
+    for (const p of patients) map.set(p.id, p);
+    return map;
+  }, [patients]);
 
-  
+  const grouped = useMemo(
+    () => groupAppointmentsByDay(appointments),
+    [appointments]
+  );
 
-
+  /**
+   * Chargement initial des patients + rendez-vous
+   * -> on ne le fait qu'au mount, pas à chaque changement de mode.
+   */
   useEffect(() => {
     const load = async () => {
       setError(null);
-      setLoading(true);
+      setLoadingMain(true);
       try {
-        if (tab === "patients") {
-          const p = await api.getPatients();
-          setPatients(p || []);
-        } else if (tab === "appointments") {
-          const [p, a] = await Promise.all([
-            api.getPatients(),
-            api.getAppointments(),
-          ]);
-          setPatients(p || []);
-          setAppointments(a || []);
-        } else if (tab === "notes") {
-          const p = await api.getPatients();
-          const safePatients = p || [];
-          setPatients(safePatients);
-          // Charge les notes pour chaque patient (en utilisant getNotesByPatient)
-          const allNotesArrays = await Promise.all(
-            safePatients.map((pt) => api.getNotesByPatient(pt.id))
-          );
-          const flatNotes: Note[] = allNotesArrays.flat();
-          setNotes(flatNotes);
+        const [p, a] = await Promise.all([
+          api.getPatients(),
+          api.getAppointments(),
+        ]);
+        const safePatients = p || [];
+        setPatients(safePatients);
+        setAppointments(a || []);
+
+        // Si aucun patient sélectionné, on sélectionne le premier
+        if (!selectedPatientId && safePatients.length > 0) {
+          setSelectedPatientId(safePatients[0].id);
         }
       } catch (err: any) {
         setError(err?.message || "Error while loading data");
       } finally {
-        setLoading(false);
+        setLoadingMain(false);
       }
     };
 
     load();
-  }, [tab]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // <-- CHANGEMENT : [] au lieu de [mode]
 
-  const handleAddPatient = async (e: React.FormEvent) => {
-    e.preventDefault();
+  /**
+   * Effet de "sanity check" : si le patient sélectionné
+   * n'existe plus dans la liste des patients, on réinitialise.
+   */
+  useEffect(() => {
+    if (!selectedPatientId) return;
+    const exists = patients.some((p) => p.id === selectedPatientId);
+    if (!exists) {
+      setSelectedPatientId(null);
+      setPatientNotes([]);
+    }
+  }, [patients, selectedPatientId]);
+
+  /**
+   * Chargement des notes du patient sélectionné (mode Patients uniquement).
+   * Gestion "soft" du cas 404 Patient not found.
+   */
+  useEffect(() => {
+    const loadNotes = async () => {
+      if (mode !== "patients" || !selectedPatientId || isCreatingNewPatient) {
+        setPatientNotes([]);
+        return;
+      }
+
+      setLoadingNotes(true);
+      setError(null);
+      try {
+        const notes = await api.getNotesByPatient(selectedPatientId);
+        setPatientNotes(
+          (notes || []).slice().sort((a, b) => {
+            const ta = new Date(a.createdAt || "").getTime();
+            const tb = new Date(b.createdAt || "").getTime();
+            return tb - ta;
+          })
+        );
+      } catch (err: any) {
+        const msg = err?.message || "";
+
+        // Cas spécifique : l'API renvoie "Patient not found"
+        if (msg.includes("Patient not found")) {
+          // On ne montre pas un gros message d'erreur global,
+          // on réinitialise simplement la sélection.
+          setSelectedPatientId(null);
+          setPatientNotes([]);
+          setIsCreatingNewPatient(false);
+          // Message plus explicite mais non bloquant
+          setError(
+            "Le patient sélectionné n'existe plus côté serveur. La sélection a été réinitialisée."
+          );
+        } else {
+          setError(msg || "Error while loading notes");
+        }
+      } finally {
+        setLoadingNotes(false);
+      }
+    };
+
+    loadNotes();
+  }, [mode, selectedPatientId, isCreatingNewPatient, patients]);
+
+  const handleSelectPatient = (id: string) => {
+    setSelectedPatientId(id);
+    setIsCreatingNewPatient(false);
+  };
+
+  const handleAddPatientClick = () => {
+    setIsCreatingNewPatient(true);
+    setSelectedPatientId(null);
+    setNewPatientFirstName("");
+    setNewPatientLastName("");
+    setNewPatientEmail("");
+    setNewPatientPhone("");
+  };
+
+  const handleSaveNewPatient = async () => {
     if (!newPatientFirstName.trim() || !newPatientLastName.trim()) return;
 
     try {
@@ -120,295 +155,192 @@ function App() {
         firstName: newPatientFirstName.trim(),
         lastName: newPatientLastName.trim(),
         email: newPatientEmail.trim() || undefined,
+        phone: newPatientPhone.trim() || undefined,
       });
+
       setPatients((prev) => [...prev, created]);
+      setSelectedPatientId(created.id);
+      setIsCreatingNewPatient(false);
+
       setNewPatientFirstName("");
       setNewPatientLastName("");
       setNewPatientEmail("");
+      setNewPatientPhone("");
     } catch (err: any) {
       setError(err?.message || "Unable to create patient");
     }
   };
 
-  const handleCreateNote = async () => {
-    if (!newNotePatientId || !newNoteContent.trim()) return;
+  const now = new Date().getTime();
+  const upcomingAppointmentsForSelected = useMemo(() => {
+    if (!selectedPatientId) return [];
+    return appointments
+      .filter(
+        (a) =>
+          a.patientId === selectedPatientId &&
+          !Number.isNaN(new Date(a.startTime).getTime()) &&
+          new Date(a.startTime).getTime() >= now
+      )
+      .sort(
+        (a, b) =>
+          new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+      );
+  }, [appointments, selectedPatientId, now]);
+
+  const selectedPatient = selectedPatientId
+    ? patientById.get(selectedPatientId) || null
+    : null;
+
+  const handleCreateNote = async (title: string, content: string) => {
+    if (!selectedPatientId || !content.trim()) return;
 
     try {
       setError(null);
-      const created = await api.createNoteForPatient(newNotePatientId, {
-        title: newNoteTitle || null,
-        content: newNoteContent,
+      const created = await api.createNoteForPatient(selectedPatientId, {
+        title: title || null,
+        content,
       });
-
-      setNotes((prev) => [created, ...prev]);
-
-      setNewNotePatientId("");
-      setNewNoteTitle("");
-      setNewNoteContent("");
+      setPatientNotes((prev) => [created, ...prev]);
     } catch (err: any) {
       setError(err?.message || "Unable to create note");
     }
   };
 
-
-  const patientById = useMemo(() => {
-    const map = new Map<string, Patient>();
-    for (const p of patients) map.set(p.id, p);
-    return map;
-  }, [patients]);
-
-  const groupedAppointments = useMemo(
-    () => groupAppointmentsByDay(appointments),
-    [appointments]
-  );
-
   return (
     <div className="app-root">
-      <aside className="sidebar">
-        <h1 className="app-title">MySafePatient</h1>
-        <p className="app-subtitle">Psychologist workspace (MVP)</p>
-
-        <nav className="nav">
-          <button
-            className={`nav-button ${tab === "patients" ? "active" : ""}`}
-            onClick={() => setTab("patients")}
-          >
-            Patients
-          </button>
-          <button
-            className={`nav-button ${tab === "appointments" ? "active" : ""}`}
-            onClick={() => setTab("appointments")}
-          >
-            Appointments
-          </button>
-          <button
-            className={`nav-button ${tab === "notes" ? "active" : ""}`}
-            onClick={() => setTab("notes")}
-          >
-            Notes
-          </button>
-        </nav>
-      </aside>
+      <SidebarMenu
+        mode={mode}
+        setMode={setMode}
+        patients={patients}
+        selectedPatientId={selectedPatientId}
+        onSelectPatient={handleSelectPatient}
+        onAddPatientClick={handleAddPatientClick}
+      />
 
       <main className="main">
         {error && <div className="alert alert-error">{error}</div>}
 
-        {/* PATIENTS TAB */}
-        {tab === "patients" && (
+        {mode === "planning" && (
           <section>
             <header className="section-header">
-              <h2>Patients</h2>
-              <span className="badge">{patients.length}</span>
-            </header>
-
-            <form className="form-inline" onSubmit={handleAddPatient}>
-              <input
-                type="text"
-                placeholder="First name"
-                value={newPatientFirstName}
-                onChange={(e) => setNewPatientFirstName(e.target.value)}
-              />
-              <input
-                type="text"
-                placeholder="Last name"
-                value={newPatientLastName}
-                onChange={(e) => setNewPatientLastName(e.target.value)}
-              />
-              <input
-                type="email"
-                placeholder="Email (optional)"
-                value={newPatientEmail}
-                onChange={(e) => setNewPatientEmail(e.target.value)}
-              />
-              <button type="submit">Add</button>
-            </form>
-
-            {loading ? (
-              <p>Loading patients…</p>
-            ) : patients.length === 0 ? (
-              <p className="empty">No patients yet.</p>
-            ) : (
-              <ul className="list">
-                {patients.map((p) => (
-                  <li key={p.id}>
-                    <strong>
-                      {p.firstName} {p.lastName}
-                    </strong>
-                    <div className="muted-row">
-                      {p.email && <span className="muted">{p.email}</span>}
-                      {p.phone && <span className="muted">{p.phone}</span>}
-                    </div>
-                    {p.notes && <p className="muted">{p.notes}</p>}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        )}
-
-        {/* APPOINTMENTS TAB */}
-        {tab === "appointments" && (
-          <section>
-            <header className="section-header">
-              <h2>Appointments (Agenda)</h2>
+              <h2>Planning (Agenda)</h2>
               <span className="badge">{appointments.length}</span>
             </header>
 
-            {loading ? (
+            {loadingMain ? (
               <p>Loading appointments…</p>
             ) : appointments.length === 0 ? (
               <p className="empty">No appointments yet.</p>
             ) : (
               <div className="agenda">
-                {groupedAppointments.map(([day, appts]) => (
-                  <div key={day} className="agenda-day">
-                    <h3 className="agenda-day-title">
-                      {day === "Invalid date"
-                        ? "Invalid date"
-                        : formatDateLabel(day)}
-                    </h3>
-                    <ul className="list">
-                      {appts
-                        .slice()
-                        .sort(
-                          (a, b) =>
-                            new Date(a.startTime).getTime() -
-                            new Date(b.startTime).getTime()
-                        )
-                        .map((a) => {
-                          const patient = patientById.get(a.patientId);
-                          return (
-                            <li key={a.id}>
-                              <div className="agenda-line">
-                                <span className="agenda-time">
-                                  {formatTime(a.startTime)}
-                                  {a.endTime
-                                    ? ` – ${formatTime(a.endTime)}`
-                                    : ""}
-                                </span>
-                                <span className="agenda-main">
-                                  {patient
-                                    ? `${patient.lastName.toUpperCase()} ${patient.firstName
-                                    }`
-                                    : "Unknown patient"}
-                                </span>
-                                <span className="agenda-status">
-                                  {a.status}
-                                </span>
-                              </div>
-                              {a.reason && (
-                                <div className="muted text-sm">
-                                  {a.reason}
-                                </div>
-                              )}
-                            </li>
-                          );
-                        })}
-                    </ul>
-                  </div>
+                {grouped.map(([day, appts]) => (
+                  <AgendaDay
+                    key={day}
+                    day={day}
+                    appointments={appts}
+                    patientById={patientById}
+                  />
                 ))}
               </div>
             )}
           </section>
         )}
 
-        {/* NOTES TAB */}
-        {tab === "notes" && (
+        {mode === "patients" && (
           <section>
             <header className="section-header">
-              <h2>Notes</h2>
-              <span className="badge">{notes.length}</span>
+              <h2>Patient</h2>
             </header>
 
-            {/* --- Create new note --- */}
-            <div className="card" style={{ padding: "1rem", marginBottom: "2rem" }}>
-              <h3 style={{ marginBottom: "1rem" }}>New note</h3>
-
-              <select
-                value={newNotePatientId}
-                onChange={(e) => setNewNotePatientId(e.target.value)}
-                className="select"
-              >
-                <option value="">Select patient…</option>
-                {patients.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.lastName.toUpperCase()} {p.firstName}
-                  </option>
-                ))}
-              </select>
-
-              <input
-                type="text"
-                placeholder="Note title (optional)"
-                value={newNoteTitle}
-                onChange={(e) => setNewNoteTitle(e.target.value)}
-                className="input"
-                style={{ marginTop: "1rem" }}
-              />
-
-              <div style={{ marginTop: "1rem" }}>
-                <RichTextEditor
-                  value={newNoteContent}
-                  onChange={setNewNoteContent}
-                  placeholder="Write your note..."
-                />
-              </div>
-
-              <button
-                className="button"
-                disabled={!newNotePatientId || !newNoteContent.trim()}
-                onClick={handleCreateNote}
-                style={{ marginTop: "1rem" }}
-              >
-                Save note
-              </button>
-            </div>
-
-            {/* --- Existing notes --- */}
-            {loading ? (
-              <p>Loading notes…</p>
-            ) : notes.length === 0 ? (
-              <p className="empty">No notes yet.</p>
+            {loadingMain ? (
+              <p>Loading data…</p>
             ) : (
-              <ul className="list">
-                {notes.map((n) => {
-                  const patient = patientById.get(n.patientId);
-                  return (
-                    <li key={n.id}>
-                      <div className="note-header">
-                        {patient && (
-                          <span className="note-patient">
-                            {patient.lastName.toUpperCase()} {patient.firstName}
-                          </span>
-                        )}
-                        <span className="note-date">
-                          {formatDateTime(n.createdAt)}
-                        </span>
-                      </div>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "1rem",
+                }}
+              >
+                <PatientDetail
+                  patient={selectedPatient}
+                  upcomingAppointments={upcomingAppointmentsForSelected}
+                  isCreatingNew={isCreatingNewPatient}
+                  newFirstName={newPatientFirstName}
+                  newLastName={newPatientLastName}
+                  newEmail={newPatientEmail}
+                  newPhone={newPatientPhone}
+                  onChangeFirstName={setNewPatientFirstName}
+                  onChangeLastName={setNewPatientLastName}
+                  onChangeEmail={setNewPatientEmail}
+                  onChangePhone={setNewPatientPhone}
+                  onSaveNewPatient={handleSaveNewPatient}
+                />
 
-                      {n.title && (
-                        <div className="note-title">
-                          <strong>{n.title}</strong>
-                        </div>
-                      )}
-
-                      {/* HTML rendu depuis Quill */}
-                      <div
-                        className="note-content"
-                        dangerouslySetInnerHTML={{ __html: n.content }}
-                      />
-                    </li>
-                  );
-                })}
-              </ul>
+                {!isCreatingNewPatient && selectedPatient && (
+                  <PatientNotes
+                    notes={patientNotes}
+                    loading={loadingNotes}
+                    onCreateNote={handleCreateNote}
+                  />
+                )}
+              </div>
             )}
           </section>
         )}
-
-
       </main>
     </div>
   );
 }
 
 export default App;
+
+// petit composant interne pour une journée d'agenda
+
+type AgendaDayProps = {
+  day: string;
+  appointments: Appointment[];
+  patientById: Map<string, Patient>;
+};
+
+function AgendaDay({ day, appointments, patientById }: AgendaDayProps) {
+  return (
+    <div className="agenda-day">
+      <h3 className="agenda-day-title">
+        {day === "Invalid date" ? "Invalid date" : formatDateLabel(day)}
+      </h3>
+      <ul className="list">
+        {appointments
+          .slice()
+          .sort(
+            (a, b) =>
+              new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+          )
+          .map((a) => {
+            const patient = patientById.get(a.patientId);
+            return (
+              <li key={a.id}>
+                <div className="agenda-line">
+                  <span className="agenda-time">
+                    {formatTime(a.startTime)}
+                    {a.endTime ? ` – ${formatTime(a.endTime)}` : ""}
+                  </span>
+                  <span className="agenda-main">
+                    {patient
+                      ? `${patient.lastName.toUpperCase()} ${
+                          patient.firstName
+                        }`
+                      : "Unknown patient"}
+                  </span>
+                  <span className="agenda-status">{a.status}</span>
+                </div>
+                {a.reason && (
+                  <div className="muted text-sm">{a.reason}</div>
+                )}
+              </li>
+            );
+          })}
+      </ul>
+    </div>
+  );
+}
