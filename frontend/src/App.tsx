@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "./api/client";
-import type { Patient, Appointment, Note } from "./types";
+import type { Patient, Appointment, Note, NewAppointmentPayload } from "./types";
 import SidebarMenu, { type Mode } from "./components/SideBarMenu";
 import PatientDetail from "./components/PatientDetail";
 import PatientNotes from "./components/PatientNotes";
-import { groupAppointmentsByDay } from "./utils/groupAppointments";
-import { formatDateLabel, formatTime } from "./utils/dateUtils";
+import PlanningView from "./components/PlanningView";
+
 
 function App() {
   const [mode, setMode] = useState<Mode>("planning");
@@ -13,12 +13,10 @@ function App() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [patientNotes, setPatientNotes] = useState<Note[]>([]);
-
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(
     null
   );
   const [isCreatingNewPatient, setIsCreatingNewPatient] = useState(false);
-
   const [loadingMain, setLoadingMain] = useState(false);
   const [loadingNotes, setLoadingNotes] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,15 +33,7 @@ function App() {
     return map;
   }, [patients]);
 
-  const grouped = useMemo(
-    () => groupAppointmentsByDay(appointments),
-    [appointments]
-  );
-
-  /**
-   * Chargement initial des patients + rendez-vous
-   * -> on ne le fait qu'au mount, pas à chaque changement de mode.
-   */
+  /** Chargement initial patients + rendez-vous */
   useEffect(() => {
     const load = async () => {
       setError(null);
@@ -57,7 +47,6 @@ function App() {
         setPatients(safePatients);
         setAppointments(a || []);
 
-        // Si aucun patient sélectionné, on sélectionne le premier
         if (!selectedPatientId && safePatients.length > 0) {
           setSelectedPatientId(safePatients[0].id);
         }
@@ -70,12 +59,9 @@ function App() {
 
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // <-- CHANGEMENT : [] au lieu de [mode]
+  }, []);
 
-  /**
-   * Effet de "sanity check" : si le patient sélectionné
-   * n'existe plus dans la liste des patients, on réinitialise.
-   */
+  /** Si le patient sélectionné n’existe plus, on reset proprement */
   useEffect(() => {
     if (!selectedPatientId) return;
     const exists = patients.some((p) => p.id === selectedPatientId);
@@ -85,10 +71,7 @@ function App() {
     }
   }, [patients, selectedPatientId]);
 
-  /**
-   * Chargement des notes du patient sélectionné (mode Patients uniquement).
-   * Gestion "soft" du cas 404 Patient not found.
-   */
+  /** Chargement des notes du patient sélectionné (mode Patients uniquement) */
   useEffect(() => {
     const loadNotes = async () => {
       if (mode !== "patients" || !selectedPatientId || isCreatingNewPatient) {
@@ -110,14 +93,10 @@ function App() {
       } catch (err: any) {
         const msg = err?.message || "";
 
-        // Cas spécifique : l'API renvoie "Patient not found"
         if (msg.includes("Patient not found")) {
-          // On ne montre pas un gros message d'erreur global,
-          // on réinitialise simplement la sélection.
           setSelectedPatientId(null);
           setPatientNotes([]);
           setIsCreatingNewPatient(false);
-          // Message plus explicite mais non bloquant
           setError(
             "Le patient sélectionné n'existe plus côté serveur. La sélection a été réinitialisée."
           );
@@ -206,141 +185,108 @@ function App() {
     }
   };
 
+  const handleCreateAppointment = async (
+    payload: NewAppointmentPayload
+  ) => {
+    try {
+      setError(null);
+      const created = await api.createAppointment(payload);
+      setAppointments((prev) => [...prev, created]);
+    } catch (err: any) {
+      setError(err?.message || "Unable to create appointment");
+    }
+  };
+
   return (
     <div className="app-root">
-      <SidebarMenu
-        mode={mode}
-        setMode={setMode}
-        patients={patients}
-        selectedPatientId={selectedPatientId}
-        onSelectPatient={handleSelectPatient}
-        onAddPatientClick={handleAddPatientClick}
-      />
+      {/* Barre supérieure */}
+      <header className="topbar">
+        <div className="topbar-left">
+          <div className="topbar-title">MySafePatient</div>
+          <div className="topbar-subtitle">Psychologist workspace · MVP</div>
+        </div>
+        <div className="topbar-right">
+          {/* Plus tard : remplacer par le vrai user */}
+          <div className="topbar-user">
+            <span className="topbar-user-avatar">CM</span>
+            <span className="topbar-user-name">Charles Malec</span>
+          </div>
+          <button className="btn btn-outline" disabled>
+            Logout (bientôt)
+          </button>
+        </div>
+      </header>
 
-      <main className="main">
-        {error && <div className="alert alert-error">{error}</div>}
+      <div className="app-shell">
+        <SidebarMenu
+          mode={mode}
+          setMode={setMode}
+          patients={patients}
+          selectedPatientId={selectedPatientId}
+          onSelectPatient={handleSelectPatient}
+          onAddPatientClick={handleAddPatientClick}
+        />
 
-        {mode === "planning" && (
-          <section>
-            <header className="section-header">
-              <h2>Planning (Agenda)</h2>
-              <span className="badge">{appointments.length}</span>
-            </header>
+        <main className="main">
+          {error && <div className="alert alert-error">{error}</div>}
 
-            {loadingMain ? (
-              <p>Loading appointments…</p>
-            ) : appointments.length === 0 ? (
-              <p className="empty">No appointments yet.</p>
-            ) : (
-              <div className="agenda">
-                {grouped.map(([day, appts]) => (
-                  <AgendaDay
-                    key={day}
-                    day={day}
-                    appointments={appts}
-                    patientById={patientById}
+          {mode === "planning" && (
+            <PlanningView
+              loading={loadingMain}
+              appointments={appointments}
+              patients={patients}
+              onCreateAppointment={handleCreateAppointment}
+            />
+          )}
+
+
+          {mode === "patients" && (
+            <section>
+              {/* On garde un petit header mais discret */}
+              <header className="section-header">
+                <h2>Dossier patient</h2>
+              </header>
+
+              {loadingMain ? (
+                <p>Chargement…</p>
+              ) : (
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "1rem",
+                  }}
+                >
+                  <PatientDetail
+                    patient={selectedPatient}
+                    upcomingAppointments={upcomingAppointmentsForSelected}
+                    isCreatingNew={isCreatingNewPatient}
+                    newFirstName={newPatientFirstName}
+                    newLastName={newPatientLastName}
+                    newEmail={newPatientEmail}
+                    newPhone={newPatientPhone}
+                    onChangeFirstName={setNewPatientFirstName}
+                    onChangeLastName={setNewPatientLastName}
+                    onChangeEmail={setNewPatientEmail}
+                    onChangePhone={setNewPatientPhone}
+                    onSaveNewPatient={handleSaveNewPatient}
                   />
-                ))}
-              </div>
-            )}
-          </section>
-        )}
 
-        {mode === "patients" && (
-          <section>
-            <header className="section-header">
-              <h2>Patient</h2>
-            </header>
-
-            {loadingMain ? (
-              <p>Loading data…</p>
-            ) : (
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "1rem",
-                }}
-              >
-                <PatientDetail
-                  patient={selectedPatient}
-                  upcomingAppointments={upcomingAppointmentsForSelected}
-                  isCreatingNew={isCreatingNewPatient}
-                  newFirstName={newPatientFirstName}
-                  newLastName={newPatientLastName}
-                  newEmail={newPatientEmail}
-                  newPhone={newPatientPhone}
-                  onChangeFirstName={setNewPatientFirstName}
-                  onChangeLastName={setNewPatientLastName}
-                  onChangeEmail={setNewPatientEmail}
-                  onChangePhone={setNewPatientPhone}
-                  onSaveNewPatient={handleSaveNewPatient}
-                />
-
-                {!isCreatingNewPatient && selectedPatient && (
-                  <PatientNotes
-                    notes={patientNotes}
-                    loading={loadingNotes}
-                    onCreateNote={handleCreateNote}
-                  />
-                )}
-              </div>
-            )}
-          </section>
-        )}
-      </main>
+                  {!isCreatingNewPatient && selectedPatient && (
+                    <PatientNotes
+                      notes={patientNotes}
+                      loading={loadingNotes}
+                      onCreateNote={handleCreateNote}
+                    />
+                  )}
+                </div>
+              )}
+            </section>
+          )}
+        </main>
+      </div>
     </div>
   );
 }
 
 export default App;
-
-// petit composant interne pour une journée d'agenda
-
-type AgendaDayProps = {
-  day: string;
-  appointments: Appointment[];
-  patientById: Map<string, Patient>;
-};
-
-function AgendaDay({ day, appointments, patientById }: AgendaDayProps) {
-  return (
-    <div className="agenda-day">
-      <h3 className="agenda-day-title">
-        {day === "Invalid date" ? "Invalid date" : formatDateLabel(day)}
-      </h3>
-      <ul className="list">
-        {appointments
-          .slice()
-          .sort(
-            (a, b) =>
-              new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
-          )
-          .map((a) => {
-            const patient = patientById.get(a.patientId);
-            return (
-              <li key={a.id}>
-                <div className="agenda-line">
-                  <span className="agenda-time">
-                    {formatTime(a.startTime)}
-                    {a.endTime ? ` – ${formatTime(a.endTime)}` : ""}
-                  </span>
-                  <span className="agenda-main">
-                    {patient
-                      ? `${patient.lastName.toUpperCase()} ${
-                          patient.firstName
-                        }`
-                      : "Unknown patient"}
-                  </span>
-                  <span className="agenda-status">{a.status}</span>
-                </div>
-                {a.reason && (
-                  <div className="muted text-sm">{a.reason}</div>
-                )}
-              </li>
-            );
-          })}
-      </ul>
-    </div>
-  );
-}

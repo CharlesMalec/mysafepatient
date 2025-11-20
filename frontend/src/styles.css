@@ -1,0 +1,987 @@
+/* ===== Reset & base ===== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #0f172a;
+  color: #e5e7eb;
+}
+
+/* ===== Layout global ===== */
+/* ===== Layout global ===== */
+.app-root {
+  min-height: 100vh;
+  background: radial-gradient(circle at top left, #1e293b 0, #020617 55%);
+  display: flex;
+  flex-direction: column;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  flex: 1;
+}
+
+/* ===== Topbar ===== */
+.topbar {
+  height: 52px;
+  padding: 0 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+  background: radial-gradient(circle at top left, #020617 0, #020617 55%);
+}
+
+.topbar-left {
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.topbar-subtitle {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.topbar-user {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+}
+
+.topbar-user-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #3b82f6, #22c55e);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #020617;
+}
+
+.topbar-user-name {
+  color: #e5e7eb;
+}
+
+/* ===== Sidebar ===== */
+.sidebar {
+  padding: 1.25rem 1rem;
+  border-right: 1px solid rgba(148, 163, 184, 0.3);
+  background: linear-gradient(to bottom, #020617, #020617f0 55%, #020617);
+}
+
+.app-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  margin: 0;
+}
+
+.app-subtitle {
+  margin: 0.15rem 0 1.25rem;
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.nav-button {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #e5e7eb;
+  text-align: left;
+  padding: 0.45rem 0.65rem;
+  border-radius: 0.5rem;
+  font-size: 0.92rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background 0.15s ease, transform 0.05s ease;
+}
+
+.nav-button:hover {
+  background: rgba(148, 163, 184, 0.12);
+}
+
+.nav-button.active {
+  background: linear-gradient(135deg, #3b82f6, #22c55e);
+  color: white;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.4);
+}
+
+.nav-button-section {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9ca3af;
+}
+
+.nav-divider {
+  opacity: 0.6;
+}
+
+.nav-tree {
+  margin: 0;
+  padding: 0;
+}
+
+.nav-tree-item {
+  color: #e5e7eb;
+}
+
+.nav-tree-item:hover {
+  background: rgba(148, 163, 184, 0.16) !important;
+}
+
+/* ===== Main ===== */
+.main {
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* ===== Cards ===== */
+.card {
+  background: radial-gradient(circle at top left, #1e293b 0, #020617 50%);
+  border-radius: 0.9rem;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.75);
+  padding: 1rem 1.1rem;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.card-subtitle {
+  margin: 0.15rem 0 0;
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+.card-body {
+  font-size: 0.9rem;
+}
+
+.card-footer {
+  margin-top: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.card input[type="text"],
+.card input[type="date"],
+.card input[type="time"],
+.card select,
+.card textarea {
+  border-radius: 0.5rem;
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  background: rgba(15, 23, 42, 0.85);
+  padding: 0.35rem 0.55rem;
+  font-size: 0.86rem;
+  color: #e5e7eb;
+  font-family: inherit;
+}
+
+.card input[type="text"]::placeholder,
+.card textarea::placeholder {
+  color: #6b7280;
+}
+
+.card input[type="text"]:focus,
+.card input[type="date"]:focus,
+.card input[type="time"]:focus,
+.card select:focus,
+.card textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.65);
+}
+
+.card textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+/* ===== Formulaires ===== */
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.form-label {
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+.required {
+  color: #f97316;
+}
+
+.form-input {
+  border-radius: 0.5rem;
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  background: rgba(15, 23, 42, 0.8);
+  padding: 0.4rem 0.55rem;
+  font-size: 0.9rem;
+  color: #e5e7eb;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.65);
+}
+
+.form-actions {
+  margin-top: 0.25rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+/* ===== Boutons ===== */
+.btn {
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 0.85rem;
+  padding: 0.4rem 0.9rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.btn-primary {
+  background: #3b82f6;
+  color: #0b1120;
+  font-weight: 500;
+  border-radius: 999px;
+  border: 1px solid #3b82f6;
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.7),
+    0 8px 18px rgba(37, 99, 235, 0.35);
+  transition: background 0.15s ease, transform 0.05s ease, box-shadow 0.15s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #2563eb;
+  border-color: #2563eb;
+  transform: translateY(-0.5px);
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.8),
+    0 10px 24px rgba(37, 99, 235, 0.45);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: default;
+  box-shadow: none;
+}
+
+.btn-outline {
+  background: transparent;
+  border-color: rgba(148, 163, 184, 0.8);
+  color: #e5e7eb;
+}
+
+.btn-ghost {
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: #e5e7eb;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: background 0.15s ease, transform 0.05s ease, color 0.15s ease;
+}
+
+.btn-ghost:hover {
+  background: rgba(148, 163, 184, 0.15);
+  transform: translateY(-0.5px);
+}
+
+.btn-ghost:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.nav-button-small {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: #9ca3af;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.nav-button-small:hover {
+  background: rgba(148, 163, 184, 0.16);
+  color: #e5e7eb;
+}
+
+.nav-button-small.active {
+  background: rgba(148, 163, 184, 0.18);
+  border-color: rgba(148, 163, 184, 0.7);
+  color: #e5e7eb;
+}
+
+/* Bouton neutre amélioré */
+.button {
+  background: rgba(148, 163, 184, 0.15);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  color: #e5e7eb;
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  transition: background 0.15s, border-color 0.15s, transform 0.05s ease;
+  cursor: pointer;
+}
+
+.button:hover:not(:disabled) {
+  background: rgba(148, 163, 184, 0.25);
+  border-color: rgba(148, 163, 184, 0.45);
+  transform: translateY(-0.5px);
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+
+/* ===== Sections / texte ===== */
+.section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.section-header-main {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.section-header h2 {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.section-title {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9ca3af;
+  margin-bottom: 0.35rem;
+}
+
+.badge {
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.75rem;
+  background: rgba(148, 163, 184, 0.2);
+  color: #e5e7eb;
+}
+
+.mono {
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.75rem;
+}
+
+/* ===== Lists & infos ===== */
+.empty {
+  font-size: 0.9rem;
+  color: #9ca3af;
+}
+
+.muted {
+  color: #9ca3af;
+}
+
+.text-sm {
+  font-size: 0.8rem;
+}
+
+.info-list {
+  margin: 0;
+  padding: 0;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.2rem 0;
+  font-size: 0.87rem;
+}
+
+.info-row dt {
+  color: #9ca3af;
+}
+
+.info-row dd {
+  margin: 0;
+}
+
+/* ===== Alerts ===== */
+.alert {
+  padding: 0.4rem 0.7rem;
+  border-radius: 0.6rem;
+  font-size: 0.8rem;
+}
+
+.alert-error {
+  background: rgba(248, 113, 113, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  color: #fecaca;
+}
+
+/* ===== Planning / Agenda ===== */
+.agenda {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.agenda-day {
+  border-radius: 0.8rem;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  padding: 0.7rem 0.8rem;
+  background: radial-gradient(circle at top left, #111827 0, #020617 55%);
+}
+
+.agenda-day-title {
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin: 0 0 0.35rem;
+  color: #e5e7eb;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.list-item {
+  padding: 0.3rem 0;
+  border-top: 1px solid rgba(15, 23, 42, 0.7);
+}
+
+.list-item:first-of-type {
+  border-top: none;
+}
+
+.agenda-line {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.agenda-time {
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular;
+  font-size: 0.8rem;
+  color: #93c5fd;
+  min-width: 90px;
+}
+
+.agenda-main {
+  font-size: 0.9rem;
+  flex: 1;
+}
+
+.agenda-status {
+  font-size: 0.75rem;
+  border-radius: 999px;
+  padding: 0.05rem 0.5rem;
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  color: #e5e7eb;
+}
+
+/* ===== Aide texte ===== */
+.hint-text {
+  font-size: 0.78rem;
+  color: #9ca3af;
+}
+
+
+/* ===== Planning toolbar ===== */
+
+.planning-toolbar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.planning-toolbar-left,
+.planning-toolbar-right,
+.planning-toolbar-extra {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.planning-toolbar-center {
+  justify-self: center;
+}
+
+.planning-current-range {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #e5e7eb;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* ==== Layout formulaire ==== */
+
+.form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.form-row > label {
+  flex: 1 1 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+.full-width {
+  width: 100%;
+}
+
+/* ==== Editor box ==== */
+
+.note-editor-box {
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 12px;
+  padding: 0.9rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+}
+
+/* Input du titre de note */
+.card input.input {
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  background: rgba(15, 23, 42, 0.85);
+  color: #e5e7eb;
+  font-size: 0.85rem;
+  padding: 0.45rem 0.6rem;
+}
+
+.card input.input::placeholder {
+  color: #9ca3af;
+}
+
+/* Rich text editor – global fix */
+.rich-text-editor {
+  background: rgba(15, 23, 42, 0.9) !important;
+  border: 1px solid rgba(148, 163, 184, 0.4) !important;
+  border-radius: 8px;
+  padding: 0.5rem;
+  color: #e5e7eb !important;
+}
+
+/* Toolbar du RTE (icônes trop ternes à l’origine) */
+.rich-text-editor .toolbar button {
+  color: #d1d5db !important;
+}
+
+.rich-text-editor .toolbar button:hover {
+  background: rgba(148, 163, 184, 0.2) !important;
+}
+
+/* Conteneur général */
+.list li {
+  padding: 0.6rem 0.2rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+  transition: background 0.15s ease;
+}
+
+.list li:hover {
+  background: rgba(148, 163, 184, 0.08);
+  border-radius: 6px;
+}
+
+/* Titre de la note */
+.note-title strong {
+  color: #f3f4f6;
+  font-size: 0.95rem;
+}
+
+/* Date */
+.note-date {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin-top: 0.15rem;
+}
+
+/* Contenu d’une note expandée */
+.note-content {
+  padding: 0.4rem 0.2rem 0.6rem 0.1rem;
+  color: #e2e8f0;
+  line-height: 1.4;
+}
+
+.note-content p {
+  margin-bottom: 0.4rem;
+}
+
+/* Icône flèche */
+.list li span {
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+
+.list li:hover span {
+  opacity: 1;
+}
+
+/* ==========================================================
+   RICH TEXT EDITOR — DARK LUXE THEME (Edition finale)
+   ========================================================== */
+
+/* Container */
+.ql-container {
+  background: rgba(17, 25, 40, 0.88) !important; /* légèrement plus clair */
+  border: 1px solid rgba(148, 163, 184, 0.45) !important;
+  border-radius: 10px !important;
+  color: #f1f5f9 !important;
+  min-height: 130px;
+}
+
+/* Editor inner text */
+.ql-editor {
+  color: #f1f5f9 !important; /* presque blanc */
+  font-size: 0.95rem;
+  line-height: 1.48;
+}
+
+.ql-editor.ql-blank::before {
+  color: #a7b0bf !important;
+  opacity: 0.7 !important;
+}
+
+/* ==========================================================
+   ReactQuill Snow – Icônes en mode sombre (global)
+   ========================================================== */
+
+/* Couleur par défaut de tous les pictos (B, I, U, listes, alignement, etc.) */
+.ql-snow .ql-stroke {
+  stroke: #e5e7eb !important;   /* gris clair lisible sur ton fond bleu */
+}
+
+.ql-snow .ql-fill {
+  fill: #0b27b8 !important;
+}
+
+/* Hover : toutes les icônes deviennent blanches */
+.ql-snow .ql-toolbar button:hover .ql-stroke,
+.ql-snow .ql-toolbar button:hover .ql-fill {
+  stroke: #ffffff !important;
+  fill: #ffffff !important;
+}
+
+/* Icône quand le bouton est actif (bold ON, liste ON, etc.) */
+.ql-snow .ql-toolbar button.ql-active .ql-stroke,
+.ql-snow .ql-toolbar button.ql-active .ql-fill {
+  stroke: #60a5fa !important;   /* bleu clair bien visible */
+  fill: #60a5fa !important;
+}
+
+/* Au cas où certains boutons mettent la couleur via color et pas stroke/fill */
+.ql-snow .ql-toolbar button {
+  color: #e5e7eb !important;
+}
+
+.ql-snow .ql-toolbar button.ql-active {
+  color: #60a5fa !important;
+}
+
+
+/* Label affiché ("Normal") */
+.ql-snow .ql-picker.ql-header .ql-picker-label {
+  color: #e5e7eb !important;              /* gris clair lisible */
+}
+
+/* Options du menu déroulant (Normal, Heading 1, Heading 2, ...) */
+.ql-snow .ql-picker.ql-header .ql-picker-item {
+  color: #e5e7eb !important;
+}
+
+/* Hover sur les options du menu */
+.ql-snow .ql-picker.ql-header .ql-picker-label:hover,
+.ql-snow .ql-picker.ql-header .ql-picker-item:hover {
+  color: #ffffff !important;
+}
+
+/* Option sélectionnée dans la dropdown */
+.ql-snow .ql-picker.ql-header .ql-picker-item.ql-selected {
+  color: #60a5fa !important;              /* bleu clair cohérent avec le reste */
+}
+
+/* Menu déroulant global (Normal / Heading / Align / Clean / etc.) */
+.ql-snow .ql-picker-options {
+  background: rgba(17, 25, 40, 0.95) !important;   /* bleu nuit */
+  border: 1px solid rgba(148, 163, 184, 0.45) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.55) !important;
+}
+
+/* Texte des options */
+.ql-snow .ql-picker-options .ql-picker-item {
+  color: #e5e7eb !important;
+}
+
+.ql-snow .ql-picker-options .ql-picker-item:hover {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Option sélectionnée dans le dropdown */
+.ql-snow .ql-picker-options .ql-picker-item.ql-selected {
+  color: #60a5fa !important;          /* bleu clair */
+}
+
+/* ======= COLOR PICKER (font color) ======= */
+
+.ql-snow .ql-color-picker .ql-picker-options {
+  background: rgba(17, 25, 40, 0.95) !important;
+  border-radius: 6px !important;
+  border: 1px solid rgba(148, 163, 184, 0.45) !important;
+}
+
+/* petit carré couleur → bordure lisible */
+.ql-snow .ql-color-picker .ql-picker-item {
+  border-color: #475569 !important;      /* gris bleu */
+}
+
+/* ======= BACKGROUND PICKER (highlight) ======= */
+
+.ql-snow .ql-background .ql-picker-options {
+  background: rgba(17, 25, 40, 0.95) !important;
+  border: 1px solid rgba(148, 163, 184, 0.45) !important;
+}
+
+.ql-snow .ql-background .ql-picker-item {
+  border-color: #475569 !important;
+}
+
+/* Hover highlight sur les carrés couleur / surbrillance */
+.ql-snow .ql-background .ql-picker-item:hover,
+.ql-snow .ql-color-picker .ql-picker-item:hover {
+  outline: 1px solid #60a5fa !important;
+}
+
+.notes-card {
+  padding: 0.9rem 1rem;
+}
+
+.notes-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.notes-title {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.notes-editor {
+  background: rgba(15, 23, 42, 0.7);
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  padding: 0.75rem 0.8rem 0.7rem;
+  margin-bottom: 0.9rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.notes-title-input {
+  width: 100%;
+  margin-bottom: 0.6rem;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  background: rgba(15, 23, 42, 0.9);
+  color: #e5e7eb;
+  font-size: 0.85rem;
+  padding: 0.4rem 0.6rem;
+}
+
+.notes-title-input::placeholder {
+  color: #9ca3af;
+}
+
+.notes-editor-body {
+  margin-bottom: 0.6rem;
+}
+
+.notes-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.1rem;
+}
+
+.notes-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.note-item {
+  border-radius: 10px;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  background: rgba(15, 23, 42, 0.5);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.05s ease;
+}
+
+.note-item.collapsed:hover {
+  background: rgba(30, 64, 175, 0.25);
+  border-color: rgba(129, 140, 248, 0.5);
+  transform: translateY(-0.5px);
+}
+
+.note-item.expanded {
+  background: rgba(116, 126, 158, 0.35);
+  border-color: rgba(0, 0, 0, 0.7);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.8);
+}
+
+.note-toggle {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+}
+
+.note-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.note-header-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.note-title strong {
+  color: #f9fafb;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.note-date {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.note-chevron {
+  font-size: 0.9rem;
+  opacity: 0.7;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.note-chevron-open {
+  transform: rotate(180deg);
+  opacity: 1;
+}
+
+.note-content {
+  margin-top: 0.4rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.4);
+  color: #e5e7eb;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.note-content p {
+  margin-bottom: 0.4rem;
+}
+
+.notes-empty {
+  font-size: 0.85rem;
+  color: #9ca3af;
+  margin-top: 0.25rem;
+}

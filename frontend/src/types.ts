@@ -33,3 +33,10 @@ export interface Note {
   createdAt: string;
   updatedAt: string;
 }
+
+export type NewAppointmentPayload = {
+  patientId: string;
+  startTime: string; // ISO
+  endTime?: string;  // ISO
+  reason?: string;
+};

@@ -42,18 +42,11 @@ export default function PatientNotes({
   };
 
   return (
-    <div className="card" style={{ padding: "1rem" }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "0.75rem",
-        }}
-      >
-        <h4 style={{ margin: 0 }}>Notes</h4>
+    <div className="card notes-card">
+      <div className="notes-header">
+        <h4 className="notes-title">Notes</h4>
         <button
-          className="button"
+          className="button notes-add-button"
           type="button"
           onClick={() => setShowEditor((prev) => !prev)}
         >
@@ -62,84 +55,78 @@ export default function PatientNotes({
       </div>
 
       {showEditor && (
-        <div
-          style={{
-            border: "1px solid rgba(0,0,0,0.1)",
-            borderRadius: "8px",
-            padding: "0.75rem",
-            marginBottom: "1rem",
-          }}
-        >
+        <div className="notes-editor">
           <input
             type="text"
             placeholder="Titre de la note (optionnel)"
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
-            className="input"
-            style={{ marginBottom: "0.75rem" }}
+            className="input notes-title-input"
           />
-          <RichTextEditor
-            value={newContent}
-            onChange={setNewContent}
-            placeholder="Écrire la note…"
-          />
-          <button
-            className="button"
-            type="button"
-            disabled={!newContent.trim()}
-            onClick={handleSave}
-            style={{ marginTop: "0.75rem" }}
-          >
-            Sauvegarder la note
-          </button>
+          <div className="notes-editor-body">
+            <RichTextEditor
+              value={newContent}
+              onChange={setNewContent}
+              placeholder="Écrire la note…"
+            />
+          </div>
+          <div className="notes-editor-actions">
+            <button
+              className="button"
+              type="button"
+              onClick={() => {
+                setShowEditor(false);
+                setNewTitle("");
+                setNewContent("");
+              }}
+            >
+              Annuler
+            </button>
+            <button
+              className="btn-primary"
+              type="button"
+              disabled={!newContent.trim()}
+              onClick={handleSave}
+            >
+              Sauvegarder la note
+            </button>
+          </div>
         </div>
       )}
 
       {loading ? (
-        <p>Loading notes…</p>
+        <p className="notes-empty muted">Chargement des notes…</p>
       ) : notes.length === 0 ? (
-        <p className="empty">Aucune note pour ce patient.</p>
+        <p className="notes-empty empty">Aucune note pour ce patient.</p>
       ) : (
-        <ul className="list">
+        <ul className="notes-list">
           {notes.map((n) => {
             const isExpanded = expandedNoteIds.has(n.id);
             return (
-              <li key={n.id}>
+              <li
+                key={n.id}
+                className={`note-item ${isExpanded ? "expanded" : "collapsed"}`}
+              >
                 <button
                   type="button"
+                  className="note-toggle"
                   onClick={() => toggleNoteExpanded(n.id)}
-                  style={{
-                    width: "100%",
-                    textAlign: "left",
-                    background: "transparent",
-                    border: "none",
-                    padding: 0,
-                    cursor: "pointer",
-                  }}
                 >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      gap: "0.5rem",
-                    }}
-                  >
-                    <div>
+                  <div className="note-header">
+                    <div className="note-header-main">
                       <div className="note-title">
                         <strong>{n.title || "Note sans titre"}</strong>
                       </div>
-                      <div className="note-date muted">
+                      <div className="note-date">
                         {formatDateTime(n.createdAt)}
                       </div>
                     </div>
                     <span
-                      style={{
-                        fontSize: "0.9rem",
-                        opacity: 0.7,
-                      }}
+                      className={`note-chevron ${
+                        isExpanded ? "note-chevron-open" : ""
+                      }`}
                     >
-                      {isExpanded ? "▲" : "▼"}
+                      ▼
                     </span>
                   </div>
                 </button>
@@ -147,7 +134,6 @@ export default function PatientNotes({
                 {isExpanded && (
                   <div
                     className="note-content"
-                    style={{ marginTop: "0.5rem" }}
                     dangerouslySetInnerHTML={{ __html: n.content }}
                   />
                 )}

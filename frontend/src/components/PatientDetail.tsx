@@ -1,18 +1,21 @@
 import type { Patient, Appointment } from "../types";
-import { formatDateLabel, formatTime } from "../utils/dateUtils";
+import { formatDateTime } from "../utils/dateUtils";
 
 type PatientDetailProps = {
   patient: Patient | null;
   upcomingAppointments: Appointment[];
   isCreatingNew: boolean;
+
   newFirstName: string;
   newLastName: string;
   newEmail: string;
   newPhone: string;
+
   onChangeFirstName: (v: string) => void;
   onChangeLastName: (v: string) => void;
   onChangeEmail: (v: string) => void;
   onChangePhone: (v: string) => void;
+
   onSaveNewPatient: () => void;
 };
 
@@ -31,126 +34,185 @@ export default function PatientDetail({
   onSaveNewPatient,
 }: PatientDetailProps) {
   if (isCreatingNew) {
+    const canSave =
+      newFirstName.trim().length > 0 && newLastName.trim().length > 0;
+
     return (
-      <div className="card" style={{ padding: "1rem", marginBottom: "1rem" }}>
-        <h3 style={{ marginTop: 0 }}>Nouveau patient</h3>
-        <p className="muted">
-          Les champs <strong>Nom</strong> et <strong>Prénom</strong> sont
-          obligatoires.
-        </p>
-        <div className="form-grid">
+      <section className="card patient-card">
+        <header className="card-header">
           <div>
-            <label>Prénom *</label>
-            <input
-              type="text"
-              value={newFirstName}
-              onChange={(e) => onChangeFirstName(e.target.value)}
-            />
+            <h3 className="card-title">Créer un nouveau patient</h3>
+            <p className="card-subtitle">
+              Renseigne au minimum le prénom et le nom pour enregistrer la
+              fiche.
+            </p>
           </div>
-          <div>
-            <label>Nom *</label>
-            <input
-              type="text"
-              value={newLastName}
-              onChange={(e) => onChangeLastName(e.target.value)}
-            />
-          </div>
-          <div>
-            <label>Email</label>
-            <input
-              type="email"
-              value={newEmail}
-              onChange={(e) => onChangeEmail(e.target.value)}
-            />
-          </div>
-          <div>
-            <label>Téléphone</label>
-            <input
-              type="tel"
-              value={newPhone}
-              onChange={(e) => onChangePhone(e.target.value)}
-            />
+        </header>
+
+        <div className="card-body">
+          <div
+            className="grid"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+              gap: "1rem 1.5rem",
+            }}
+          >
+            <div className="form-field">
+              <label className="form-label">
+                Prénom<span className="required">*</span>
+              </label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="ex. Marie"
+                value={newFirstName}
+                onChange={(e) => onChangeFirstName(e.target.value)}
+              />
+            </div>
+
+            <div className="form-field">
+              <label className="form-label">
+                Nom<span className="required">*</span>
+              </label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="ex. DURAND"
+                value={newLastName}
+                onChange={(e) => onChangeLastName(e.target.value)}
+              />
+            </div>
+
+            <div className="form-field">
+              <label className="form-label">Email</label>
+              <input
+                type="email"
+                className="form-input"
+                placeholder="ex. marie.durand@example.com"
+                value={newEmail}
+                onChange={(e) => onChangeEmail(e.target.value)}
+              />
+            </div>
+
+            <div className="form-field">
+              <label className="form-label">Téléphone</label>
+              <input
+                type="tel"
+                className="form-input"
+                placeholder="ex. +32 4 12 34 56 78"
+                value={newPhone}
+                onChange={(e) => onChangePhone(e.target.value)}
+              />
+            </div>
           </div>
         </div>
 
-        <button
-          className="button"
-          type="button"
-          disabled={!newFirstName.trim() || !newLastName.trim()}
-          onClick={onSaveNewPatient}
-          style={{ marginTop: "1rem" }}
-        >
-          Sauvegarder le patient
-        </button>
-      </div>
+        <footer className="card-footer">
+          <button
+            className="btn btn-primary"
+            onClick={onSaveNewPatient}
+            disabled={!canSave}
+          >
+            Enregistrer le patient
+          </button>
+          <span className="hint-text">
+            <span className="required">*</span> champs obligatoires
+          </span>
+        </footer>
+      </section>
     );
   }
 
+  // Pas de patient sélectionné
   if (!patient) {
     return (
-      <div className="card" style={{ padding: "1rem", marginBottom: "1rem" }}>
-        <p className="empty">Sélectionnez un patient dans le menu de gauche.</p>
-      </div>
+      <section className="card patient-card">
+        <div className="card-body">
+          <p className="empty">
+            Aucun patient sélectionné. Choisis un patient dans la colonne de
+            gauche ou clique sur “Ajouter un patient”.
+          </p>
+        </div>
+      </section>
     );
   }
 
+  // Vue fiche patient existant
   return (
-    <>
-      <div className="card" style={{ padding: "1rem", marginBottom: "1rem" }}>
+    <section className="card patient-card">
+      <header className="card-header">
+        <div>
+          <h3 className="card-title">
+            {patient.lastName.toUpperCase()} {patient.firstName}
+          </h3>
+          <p className="card-subtitle">
+            Fiche patient · ID: <span className="mono">{patient.id}</span>
+          </p>
+        </div>
+
+        <button className="btn btn-outline" disabled>
+          Ajouter un RDV (bientôt)
+        </button>
+      </header>
+
+      <div className="card-body">
         <div
+          className="grid"
           style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "baseline",
-            gap: "1rem",
+            display: "grid",
+            gridTemplateColumns: "minmax(0, 2fr) minmax(0, 3fr)",
+            gap: "1.5rem",
           }}
         >
+          {/* Bloc identité */}
           <div>
-            <h3 style={{ margin: 0 }}>
-              {patient.lastName.toUpperCase()} {patient.firstName}
-            </h3>
-            {patient.email && <div className="muted">{patient.email}</div>}
-            {patient.phone && <div className="muted">{patient.phone}</div>}
+            <h4 className="section-title">Coordonnées</h4>
+            <dl className="info-list">
+              <div className="info-row">
+                <dt>Nom</dt>
+                <dd>
+                  {patient.lastName.toUpperCase()} {patient.firstName}
+                </dd>
+              </div>
+              <div className="info-row">
+                <dt>Email</dt>
+                <dd>{patient.email || <span className="muted">Non renseigné</span>}</dd>
+              </div>
+              <div className="info-row">
+                <dt>Téléphone</dt>
+                <dd>{patient.phone || <span className="muted">Non renseigné</span>}</dd>
+              </div>
+            </dl>
           </div>
 
-          <button
-            className="button"
-            type="button"
-            disabled
-            title="Coming soon"
-          >
-            Ajouter un RDV
-          </button>
+          {/* Bloc prochains rendez-vous */}
+          <div>
+            <h4 className="section-title">Prochains rendez-vous</h4>
+            {upcomingAppointments.length === 0 ? (
+              <p className="muted text-sm">
+                Aucun rendez-vous à venir pour ce patient.
+              </p>
+            ) : (
+              <ul className="list">
+                {upcomingAppointments.map((appt) => (
+                  <li key={appt.id} className="list-item">
+                    <div className="appt-line">
+                      <span className="appt-date">
+                        {formatDateTime(appt.startTime)}
+                      </span>
+                      <span className="appt-status">{appt.status}</span>
+                    </div>
+                    {appt.reason && (
+                      <div className="muted text-sm">{appt.reason}</div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       </div>
-
-      <div className="card" style={{ padding: "1rem", marginBottom: "1rem" }}>
-        <h4 style={{ marginTop: 0, marginBottom: "0.75rem" }}>
-          Prochains rendez-vous
-        </h4>
-        {upcomingAppointments.length === 0 ? (
-          <p className="empty">Aucun rendez-vous à venir.</p>
-        ) : (
-          <ul className="list">
-            {upcomingAppointments.map((a) => (
-              <li key={a.id}>
-                <div className="agenda-line">
-                  <span className="agenda-time">
-                    {formatDateLabel(
-                      new Date(a.startTime).toISOString().slice(0, 10)
-                    )}{" "}
-                    – {formatTime(a.startTime)}
-                  </span>
-                  <span className="agenda-status">{a.status}</span>
-                </div>
-                {a.reason && (
-                  <div className="muted text-sm">{a.reason}</div>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </>
+    </section>
   );
 }

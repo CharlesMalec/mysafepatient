@@ -24,72 +24,51 @@ export default function SidebarMenu({
 
   return (
     <aside className="sidebar">
-      <h1 className="app-title">MySafePatient</h1>
-      <p className="app-subtitle">Psychologist workspace (MVP)</p>
-
       <nav className="nav">
-        {/* Bouton Planning */}
         <button
           className={`nav-button ${mode === "planning" ? "active" : ""}`}
           onClick={() => setMode("planning")}
+          style={{ display: "grid", gridTemplateColumns: "12px 1fr", gap: "6px" }}
         >
-          Planning
+          <span /> {/* colonne vide pour alignement parfait */}
+          <span>Planning</span>
         </button>
 
-        {/* Séparateur visuel */}
-        <div
-          className="nav-divider"
-          style={{
-            margin: "0.75rem 0",
-            borderBottom: "1px solid rgba(255, 255, 255, 0.12)",
-          }}
-        />
+        <div className="nav-divider" />
 
-        {/* Section Patients (arborescence) */}
         <div className="nav-group">
           <button
-            className={`nav-button nav-button-section ${
-              mode === "patients" ? "active" : ""
-            }`}
+            className={`nav-button ${mode === "patients" ? "active" : ""}`}
             onClick={() => {
               setMode("patients");
               setPatientsOpen((prev) => !prev);
             }}
+            style={{ display: "grid", gridTemplateColumns: "12px 1fr", gap: "6px" }}
           >
             <span
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.35rem",
+                fontSize: "0.75rem",
+                opacity: 0.8,
+                textAlign: "center",
               }}
             >
-              <span
-                className="nav-toggle-icon"
-                style={{ fontSize: "0.8rem", opacity: 0.9 }}
-              >
-                {patientsOpen ? "▾" : "▸"}
-              </span>
-              <span>Patients</span>
+              {patientsOpen ? "▾" : "▸"}
             </span>
+            <span>Patients</span>
           </button>
 
           {patientsOpen && (
-            <ul
-              className="nav-tree"
-              style={{
-                listStyle: "none",
-                paddingLeft: "0",
-                marginTop: "0.35rem",
-              }}
-            >
+            <ul className="nav-tree">
               {patients.map((p) => {
                 const selected = selectedPatientId === p.id;
                 return (
                   <li
                     key={p.id}
-                    className={`nav-tree-item ${
-                      selected ? "selected" : ""
-                    }`}
+                    className={`nav-tree-item ${selected ? "selected" : ""}`}
+                    onClick={() => {
+                      setMode("patients");
+                      onSelectPatient(p.id);
+                    }}
                     style={{
                       cursor: "pointer",
                       padding: "0.15rem 0.75rem 0.15rem 1.5rem",
@@ -104,10 +83,6 @@ export default function SidebarMenu({
                       borderLeft: selected
                         ? "2px solid rgba(255, 255, 255, 0.7)"
                         : "2px solid transparent",
-                    }}
-                    onClick={() => {
-                      setMode("patients");
-                      onSelectPatient(p.id);
                     }}
                   >
                     <span
@@ -127,6 +102,10 @@ export default function SidebarMenu({
               })}
 
               <li
+                onClick={() => {
+                  setMode("patients");
+                  onAddPatientClick();
+                }}
                 style={{
                   cursor: "pointer",
                   padding: "0.25rem 0.75rem 0.25rem 1.5rem",
@@ -136,10 +115,6 @@ export default function SidebarMenu({
                   display: "flex",
                   alignItems: "center",
                   gap: "0.35rem",
-                }}
-                onClick={() => {
-                  setMode("patients");
-                  onAddPatientClick();
                 }}
               >
                 <span
