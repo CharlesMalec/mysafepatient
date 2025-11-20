@@ -63,6 +63,16 @@ export const api = {
             body: JSON.stringify(payload),
         });
     },
+    
+    updateAppointment(
+        id: string,
+        payload: Partial<Appointment>
+    ): Promise<Appointment> {
+        return apiFetch<Appointment>(`"/appointments/${id}`, {
+            method: "PUT",
+            body: JSON.stringify(payload),
+        });
+    },
 
     // --- NOTES ---
     getNotesByPatient(patientId: string): Promise<Note[]> {
@@ -75,6 +85,16 @@ export const api = {
     ): Promise<Note> {
         return apiFetch<Note>(`/patients/${patientId}/notes`, {
             method: "POST",
+            body: JSON.stringify(payload),
+        });
+    },
+
+    updateNote(
+        noteId: string,
+        payload: { title?: string | null; content?: string }
+    ): Promise<Note> {
+        return apiFetch<Note>(`/notes/${noteId}`, {
+            method: "PUT",
             body: JSON.stringify(payload),
         });
     },

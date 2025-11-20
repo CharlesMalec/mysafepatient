@@ -13,6 +13,10 @@ type PlanningViewProps = {
   appointments: Appointment[];
   patients: Patient[];
   onCreateAppointment: (data: NewAppointmentPayload) => Promise<void> | void;
+  onUpdateAppointment: (
+    id: string,
+    changes: Partial<Appointment>
+  ) => Promise<void> | void;
 };
 
 function startOfDay(date: Date) {
@@ -124,6 +128,7 @@ export default function PlanningView({
   appointments,
   patients,
   onCreateAppointment,
+  onUpdateAppointment,
 }: PlanningViewProps) {
   const [view, setView] = useState<ViewMode>("day");
   const [anchorDate, setAnchorDate] = useState<Date>(() => new Date());
@@ -139,6 +144,13 @@ export default function PlanningView({
   const [formStartTime, setFormStartTime] = useState("09:00");
   const [formEndTime, setFormEndTime] = useState("10:00");
   const [formReason, setFormReason] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editPatientId, setEditPatientId] = useState("");
+  const [editDate, setEditDate] = useState("");
+  const [editStartTime, setEditStartTime] = useState("");
+  const [editEndTime, setEditEndTime] = useState("");
+  const [editReason, setEditReason] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   function goPrev() {
     if (view === "day") setAnchorDate((d) => addDays(d, -1));
@@ -230,6 +242,73 @@ export default function PlanningView({
     }
   }
 
+  const openEdit = (appt: Appointment) => {
+    setEditingId(appt.id);
+    setEditPatientId(appt.patientId || "");
+
+    const start = new Date(appt.startTime);
+    const yyyy = start.getFullYear();
+    const mm = String(start.getMonth() + 1).padStart(2, "0");
+    const dd = String(start.getDate()).padStart(2, "0");
+    setEditDate(`${yyyy}-${mm}-${dd}`);
+
+    const hh = String(start.getHours()).padStart(2, "0");
+    const min = String(start.getMinutes()).padStart(2, "0");
+    setEditStartTime(`${hh}:${min}`);
+
+    if (appt.endTime) {
+      const end = new Date(appt.endTime);
+      const eh = String(end.getHours()).padStart(2, "0");
+      const em = String(end.getMinutes()).padStart(2, "0");
+      setEditEndTime(`${eh}:${em}`);
+    } else {
+      setEditEndTime("");
+    }
+
+    setEditReason(appt.reason || "");
+    setShowForm(false); // on ferme le form de création si ouvert
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditPatientId("");
+    setEditDate("");
+    setEditStartTime("");
+    setEditEndTime("");
+    setEditReason("");
+  };
+
+  const handleSubmitEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingId || !editDate || !editStartTime || !editPatientId) return;
+
+    try {
+      setSavingEdit(true);
+      const dateObj = new Date(editDate + "T00:00:00");
+
+      const payload: Partial<Appointment> = {
+        patientId: editPatientId,
+        startTime: combineDateAndTime(dateObj, editStartTime),
+        reason: editReason || undefined,
+      };
+
+      if (editEndTime) {
+        payload.endTime = combineDateAndTime(dateObj, editEndTime);
+      } else {
+        payload.endTime = undefined;
+      }
+
+      await onUpdateAppointment(editingId, payload);
+      cancelEdit();
+    } catch (err) {
+      console.error(err);
+      alert("Erreur lors de la mise à jour du rendez-vous.");
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+
   return (
     <section>
       <header className="section-header">
@@ -276,36 +355,32 @@ export default function PlanningView({
           <div className="planning-toolbar-right">
             <button
               type="button"
-              className={`nav-button-small ${
-                view === "day" ? "active" : ""
-              }`}
+              className={`nav-button-small ${view === "day" ? "active" : ""
+                }`}
               onClick={() => setView("day")}
             >
               Jour
             </button>
             <button
               type="button"
-              className={`nav-button-small ${
-                view === "week" ? "active" : ""
-              }`}
+              className={`nav-button-small ${view === "week" ? "active" : ""
+                }`}
               onClick={() => setView("week")}
             >
               Semaine
             </button>
             <button
               type="button"
-              className={`nav-button-small ${
-                view === "month" ? "active" : ""
-              }`}
+              className={`nav-button-small ${view === "month" ? "active" : ""
+                }`}
               onClick={() => setView("month")}
             >
               Mois
             </button>
             <button
               type="button"
-              className={`nav-button-small ${
-                view === "year" ? "active" : ""
-              }`}
+              className={`nav-button-small ${view === "year" ? "active" : ""
+                }`}
               onClick={() => setView("year")}
             >
               Année
@@ -439,23 +514,109 @@ export default function PlanningView({
                         <div className="agenda-line">
                           <span className="agenda-time">
                             {formatTime(appt.startTime)}
-                            {appt.endTime
-                              ? ` – ${formatTime(appt.endTime)}`
-                              : ""}
+                            {appt.endTime ? ` – ${formatTime(appt.endTime)}` : ""}
                           </span>
                           <span className="agenda-main">
                             {patient
-                              ? `${patient.lastName.toUpperCase()} ${
-                                  patient.firstName
-                                }`
+                              ? `${patient.lastName.toUpperCase()} ${patient.firstName}`
                               : "Patient inconnu"}
                           </span>
-                          <span className="agenda-status">
-                            {appt.status}
-                          </span>
+                          <span className="agenda-status">{appt.status}</span>
                         </div>
-                        {appt.reason && (
-                          <div className="muted text-sm">{appt.reason}</div>
+
+                        {editingId === appt.id ? (
+                          <form className="form-grid agenda-edit-form" onSubmit={handleSubmitEdit}>
+                            <div className="form-row">
+                              <label>
+                                Patient
+                                <select
+                                  value={editPatientId}
+                                  onChange={(e) => setEditPatientId(e.target.value)}
+                                  required
+                                >
+                                  <option value="">Sélectionner un patient…</option>
+                                  {sortedPatients.map((p) => (
+                                    <option key={p.id} value={p.id}>
+                                      {p.lastName.toUpperCase()} {p.firstName}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+
+                              <label>
+                                Date
+                                <input
+                                  type="date"
+                                  value={editDate}
+                                  onChange={(e) => setEditDate(e.target.value)}
+                                  required
+                                />
+                              </label>
+
+                              <label>
+                                Début
+                                <input
+                                  type="time"
+                                  value={editStartTime}
+                                  onChange={(e) => setEditStartTime(e.target.value)}
+                                  required
+                                />
+                              </label>
+
+                              <label>
+                                Fin
+                                <input
+                                  type="time"
+                                  value={editEndTime}
+                                  onChange={(e) => setEditEndTime(e.target.value)}
+                                />
+                              </label>
+                            </div>
+
+                            <div className="form-row">
+                              <label className="full-width">
+                                Motif (optionnel)
+                                <textarea
+                                  value={editReason}
+                                  onChange={(e) => setEditReason(e.target.value)}
+                                  rows={2}
+                                />
+                              </label>
+                            </div>
+
+                            <div className="form-actions">
+                              <button
+                                type="button"
+                                className="btn-ghost"
+                                onClick={cancelEdit}
+                                disabled={savingEdit}
+                              >
+                                Annuler
+                              </button>
+                              <button
+                                type="submit"
+                                className="btn-primary"
+                                disabled={savingEdit}
+                              >
+                                {savingEdit ? "Enregistrement…" : "Enregistrer"}
+                              </button>
+                            </div>
+                          </form>
+                        ) : (
+                          <>
+                            {appt.reason && (
+                              <div className="muted text-sm">{appt.reason}</div>
+                            )}
+                            <div className="agenda-actions">
+                              <button
+                                type="button"
+                                className="button small"
+                                onClick={() => openEdit(appt)}
+                              >
+                                Modifier
+                              </button>
+                            </div>
+                          </>
                         )}
                       </li>
                     );

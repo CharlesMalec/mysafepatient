@@ -7,19 +7,25 @@ type PatientNotesProps = {
   notes: Note[];
   loading: boolean;
   onCreateNote: (title: string, content: string) => void;
+  onUpdateNote: (id: string, title: string, content: string) => void; // ⬅️ NEW
 };
 
 export default function PatientNotes({
   notes,
   loading,
   onCreateNote,
+  onUpdateNote,
 }: PatientNotesProps) {
   const [showEditor, setShowEditor] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newContent, setNewContent] = useState("");
   const [expandedNoteIds, setExpandedNoteIds] = useState<Set<string>>(
     () => new Set()
+
   );
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState("");
+  const [editingContent, setEditingContent] = useState("");
 
   const toggleNoteExpanded = (id: string) => {
     setExpandedNoteIds((prev) => {
@@ -39,6 +45,30 @@ export default function PatientNotes({
     setNewTitle("");
     setNewContent("");
     setShowEditor(false);
+  };
+
+  const startEdit = (note: Note) => {
+    setEditingNoteId(note.id);
+    setEditingTitle(note.title || "");
+    setEditingContent(note.content);
+    // on force la note ouverte
+    setExpandedNoteIds((prev) => {
+      const next = new Set(prev);
+      next.add(note.id);
+      return next;
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingNoteId(null);
+    setEditingTitle("");
+    setEditingContent("");
+  };
+
+  const handleUpdate = (note: Note) => {
+    if (!editingContent.trim()) return;
+    onUpdateNote(note.id, editingTitle || "", editingContent);
+    cancelEdit();
   };
 
   return (
@@ -122,9 +152,8 @@ export default function PatientNotes({
                       </div>
                     </div>
                     <span
-                      className={`note-chevron ${
-                        isExpanded ? "note-chevron-open" : ""
-                      }`}
+                      className={`note-chevron ${isExpanded ? "note-chevron-open" : ""
+                        }`}
                     >
                       ▼
                     </span>
@@ -132,10 +161,58 @@ export default function PatientNotes({
                 </button>
 
                 {isExpanded && (
-                  <div
-                    className="note-content"
-                    dangerouslySetInnerHTML={{ __html: n.content }}
-                  />
+                  <div className="note-content">
+                    {editingNoteId === n.id ? (
+                      <>
+                        <input
+                          type="text"
+                          className="input notes-title-input"
+                          value={editingTitle}
+                          onChange={(e) => setEditingTitle(e.target.value)}
+                          placeholder="Titre de la note"
+                        />
+                        <div className="notes-editor-body">
+                          <RichTextEditor
+                            value={editingContent}
+                            onChange={setEditingContent}
+                            placeholder="Éditer la note…"
+                          />
+                        </div>
+                        <div className="notes-editor-actions">
+                          <button
+                            className="button"
+                            type="button"
+                            onClick={cancelEdit}
+                          >
+                            Annuler
+                          </button>
+                          <button
+                            className="btn-primary"
+                            type="button"
+                            disabled={!editingContent.trim()}
+                            onClick={() => handleUpdate(n)}
+                          >
+                            Enregistrer
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div
+                          dangerouslySetInnerHTML={{ __html: n.content }}
+                        />
+                        <div className="note-actions">
+                          <button
+                            className="button note-edit-button"
+                            type="button"
+                            onClick={() => startEdit(n)}
+                          >
+                            Modifier
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 )}
               </li>
             );

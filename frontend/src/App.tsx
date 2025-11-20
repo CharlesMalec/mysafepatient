@@ -185,6 +185,23 @@ function App() {
     }
   };
 
+  const handleUpdateNote = async (
+    id: string,
+    title: string,
+    content: string
+  ) => {
+    try {
+      setError(null);
+      const updated = await api.updateNote(id, { title, content });
+
+      setPatientNotes((prev) =>
+        prev.map((n) => (n.id === id ? updated : n))
+      );
+    } catch (err: any) {
+      setError(err?.message || "Unable to update note");
+    }
+  };
+
   const handleCreateAppointment = async (
     payload: NewAppointmentPayload
   ) => {
@@ -194,6 +211,21 @@ function App() {
       setAppointments((prev) => [...prev, created]);
     } catch (err: any) {
       setError(err?.message || "Unable to create appointment");
+    }
+  };
+
+  const handleUpdateAppointment = async (
+    id: string,
+    changes: Partial<Appointment>
+  ) => {
+    try {
+      setError(null);
+      const updated = await api.updateAppointment(id, changes);
+      setAppointments((prev) =>
+        prev.map((a) => (a.id === id ? updated : a))
+      );
+    } catch (err: any) {
+      setError(err?.message || "Unable to update appointment");
     }
   };
 
@@ -236,6 +268,7 @@ function App() {
               appointments={appointments}
               patients={patients}
               onCreateAppointment={handleCreateAppointment}
+              onUpdateAppointment={handleUpdateAppointment}
             />
           )}
 
@@ -277,6 +310,7 @@ function App() {
                       notes={patientNotes}
                       loading={loadingNotes}
                       onCreateNote={handleCreateNote}
+                      onUpdateNote={handleUpdateNote}
                     />
                   )}
                 </div>
