@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import type { Patient, Appointment } from "../types";
 import { formatDateTime } from "../utils/dateUtils";
 
@@ -17,7 +18,12 @@ type PatientDetailProps = {
   onChangePhone: (v: string) => void;
 
   onSaveNewPatient: () => void;
+  onUpdatePatient: (
+    id: string,
+    changes: Partial<Patient>
+  ) => Promise<void> | void;
 };
+
 
 export default function PatientDetail({
   patient,
@@ -32,7 +38,18 @@ export default function PatientDetail({
   onChangeEmail,
   onChangePhone,
   onSaveNewPatient,
+  onUpdatePatient,
 }: PatientDetailProps) {
+  const [editMode, setEditMode] = useState(false);
+  const [editEmail, setEditEmail] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+
+  useEffect(() => {
+    if (patient) {
+      setEditEmail(patient.email || "");
+      setEditPhone(patient.phone || "");
+    }
+  }, [patient]);
   if (isCreatingNew) {
     const canSave =
       newFirstName.trim().length > 0 && newLastName.trim().length > 0;
@@ -165,9 +182,10 @@ export default function PatientDetail({
             gap: "1.5rem",
           }}
         >
-          {/* Bloc identité */}
+          {/* Bloc coordonnées */}
           <div>
             <h4 className="section-title">Coordonnées</h4>
+
             <dl className="info-list">
               <div className="info-row">
                 <dt>Nom</dt>
@@ -175,15 +193,91 @@ export default function PatientDetail({
                   {patient.lastName.toUpperCase()} {patient.firstName}
                 </dd>
               </div>
-              <div className="info-row">
-                <dt>Email</dt>
-                <dd>{patient.email || <span className="muted">Non renseigné</span>}</dd>
-              </div>
-              <div className="info-row">
-                <dt>Téléphone</dt>
-                <dd>{patient.phone || <span className="muted">Non renseigné</span>}</dd>
-              </div>
+
+              {!editMode ? (
+                <>
+                  <div className="info-row">
+                    <dt>Email</dt>
+                    <dd>
+                      {patient.email || <span className="muted">Non renseigné</span>}
+                    </dd>
+                  </div>
+                  <div className="info-row">
+                    <dt>Téléphone</dt>
+                    <dd>
+                      {patient.phone || <span className="muted">Non renseigné</span>}
+                    </dd>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="info-row">
+                    <dt>Email</dt>
+                    <dd>
+                      <input
+                        type="email"
+                        className="form-input"
+                        value={editEmail}
+                        onChange={(e) => setEditEmail(e.target.value)}
+                        placeholder="ex. marie.durand@example.com"
+                      />
+                    </dd>
+                  </div>
+                  <div className="info-row">
+                    <dt>Téléphone</dt>
+                    <dd>
+                      <input
+                        type="tel"
+                        className="form-input"
+                        value={editPhone}
+                        onChange={(e) => setEditPhone(e.target.value)}
+                        placeholder="ex. +32 4 12 34 56 78"
+                      />
+                    </dd>
+                  </div>
+                </>
+              )}
             </dl>
+
+            <div style={{ marginTop: "0.75rem", display: "flex", gap: "0.5rem" }}>
+              {!editMode ? (
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={() => setEditMode(true)}
+                >
+                  Modifier
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    onClick={() => {
+                      setEditMode(false);
+                      setEditEmail(patient.email || "");
+                      setEditPhone(patient.phone || "");
+                    }}
+                  >
+                    Annuler
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={async () => {
+                      await onUpdatePatient(patient.id, {
+                        email: editEmail.trim() || undefined,
+                        phone: editPhone.trim() || undefined,
+                      });
+                      setEditMode(false);
+                    }}
+                  >
+                    Enregistrer
+                  </button>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Bloc prochains rendez-vous */}

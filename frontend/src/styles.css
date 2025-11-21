@@ -998,3 +998,25 @@ body {
   display: flex;
   justify-content: flex-end;
 }
+
+.agenda-line {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.agenda-time {
+  min-width: 80px;
+}
+
+.agenda-main {
+  flex: 1;
+}
+
+.agenda-status {
+  margin-right: 0.5rem;
+}
+
+.agenda-edit-button {
+  /* optionnel : pour bien qu’il colle à la droite */
+}

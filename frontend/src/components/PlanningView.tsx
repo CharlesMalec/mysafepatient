@@ -516,12 +516,24 @@ export default function PlanningView({
                             {formatTime(appt.startTime)}
                             {appt.endTime ? ` – ${formatTime(appt.endTime)}` : ""}
                           </span>
+
                           <span className="agenda-main">
                             {patient
                               ? `${patient.lastName.toUpperCase()} ${patient.firstName}`
                               : "Patient inconnu"}
                           </span>
+
                           <span className="agenda-status">{appt.status}</span>
+
+                          {editingId !== appt.id && (
+                            <button
+                              type="button"
+                              className="button small agenda-edit-button"
+                              onClick={() => openEdit(appt)}
+                            >
+                              Modifier
+                            </button>
+                          )}
                         </div>
 
                         {editingId === appt.id ? (
@@ -607,15 +619,6 @@ export default function PlanningView({
                             {appt.reason && (
                               <div className="muted text-sm">{appt.reason}</div>
                             )}
-                            <div className="agenda-actions">
-                              <button
-                                type="button"
-                                className="button small"
-                                onClick={() => openEdit(appt)}
-                              >
-                                Modifier
-                              </button>
-                            </div>
                           </>
                         )}
                       </li>

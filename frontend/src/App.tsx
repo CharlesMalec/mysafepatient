@@ -229,6 +229,21 @@ function App() {
     }
   };
 
+  const handleUpdatePatient = async (
+    id: string,
+    changes: Partial<Patient>
+  ) => {
+    try {
+      setError(null);
+      const updated = await api.updatePatient(id, changes);
+      setPatients((prev) =>
+        prev.map((p) => (p.id === id ? updated : p))
+      );
+    } catch (err: any) {
+      setError(err?.message || "Unable to update patient");
+    }
+  };
+
   return (
     <div className="app-root">
       {/* Barre supérieure */}
@@ -303,6 +318,7 @@ function App() {
                     onChangeEmail={setNewPatientEmail}
                     onChangePhone={setNewPatientPhone}
                     onSaveNewPatient={handleSaveNewPatient}
+                    onUpdatePatient={handleUpdatePatient}
                   />
 
                   {!isCreatingNewPatient && selectedPatient && (

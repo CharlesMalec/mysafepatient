@@ -32,7 +32,9 @@ async function apiFetch<T>(
 }
 
 export const api = {
+    
     // --- PATIENTS ---
+    
     getPatients(): Promise<Patient[]> {
         return apiFetch<Patient[]>("/patients");
     },
@@ -48,7 +50,15 @@ export const api = {
         });
     },
 
+    updatePatient(id: string, payload: Partial<Patient>): Promise<Patient> {
+        return apiFetch<Patient>(`/patients/${id}`, {
+            method: "PUT",
+            body: JSON.stringify(payload),
+        });
+    },
+
     // --- APPOINTMENTS ---
+    
     getAppointments(): Promise<Appointment[]> {
         return apiFetch<Appointment[]>("/appointments");
     },
@@ -63,18 +73,19 @@ export const api = {
             body: JSON.stringify(payload),
         });
     },
-    
+
     updateAppointment(
         id: string,
         payload: Partial<Appointment>
     ): Promise<Appointment> {
-        return apiFetch<Appointment>(`"/appointments/${id}`, {
+        return apiFetch<Appointment>(`/appointments/${id}`, {
             method: "PUT",
             body: JSON.stringify(payload),
         });
     },
 
     // --- NOTES ---
+    
     getNotesByPatient(patientId: string): Promise<Note[]> {
         return apiFetch<Note[]>(`/patients/${patientId}/notes`);
     },
